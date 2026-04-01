@@ -19,7 +19,7 @@ This directory is the clean rewrite area for the project described in [FSD.md](.
 - `progress.md`
   Development log for this rewrite.
 - `data/`
-  Runtime assets such as radio station CSV files, YouTube sources, and local music folders.
+  Runtime assets such as radio station CSV files and YouTube sources.
 - `ultimate_pi_box/`
   Shared runtime package.
 
@@ -33,4 +33,8 @@ The shared runtime files have been created:
 - VLC helper
 - basic application shell
 
-The component package directories and their documentation are defined next so each feature has a clear home before implementation.
+Runtime notes:
+
+- Local music is now read from `/home/infinity/Music`.
+- Radio stations are read from `data/radio_stations.csv`.
+- The local web interface runs on port `8080` when Flask is installed.

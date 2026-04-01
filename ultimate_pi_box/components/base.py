@@ -25,3 +25,9 @@ class BaseComponent:
 
     def tick(self, app) -> None:
         return None
+
+    def get_web_state(self, app) -> dict[str, object]:
+        return {"key": self.key, "label": self.label}
+
+    def web_command(self, app, command: str, value: str | None = None) -> bool:
+        return False

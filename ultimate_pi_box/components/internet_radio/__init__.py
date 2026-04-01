@@ -129,3 +129,50 @@ class InternetRadioComponent(BaseComponent):
         if self.player is not None and not self.player.is_running():
             self.playing = False
         self.render(app)
+
+    def get_web_state(self, app) -> dict[str, object]:
+        self._load_stations(app)
+        current_station = self.stations[self.selected_index][0] if self.stations else None
+        return {
+            "key": self.key,
+            "label": self.label,
+            "items": [name for name, _ in self.stations[:100]],
+            "selected_index": self.selected_index,
+            "playing": self.playing,
+            "current_item": current_station,
+        }
+
+    def web_command(self, app, command: str, value: str | None = None) -> bool:
+        self._load_stations(app)
+        if command == "open" and value is not None and self.stations:
+            try:
+                self.selected_index = max(0, min(int(value), len(self.stations) - 1))
+            except ValueError:
+                return False
+            self._play_selected()
+            self.render(app)
+            return True
+        if not self.stations:
+            return False
+        if command == "play_pause":
+            if not self.playing:
+                self._play_selected()
+            elif self.player is not None:
+                self.player.stop()
+                self.playing = False
+            self.render(app)
+            return True
+        if command == "next":
+            self._play_relative(1)
+            self.render(app)
+            return True
+        if command == "previous":
+            self._play_relative(-1)
+            self.render(app)
+            return True
+        if command == "stop" and self.player is not None:
+            self.player.stop()
+            self.playing = False
+            self.render(app)
+            return True
+        return False

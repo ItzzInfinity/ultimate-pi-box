@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 import math
+import time
 
 from PIL import Image, ImageDraw
 
@@ -36,6 +37,20 @@ def trim_text(draw, text: str, font, max_width: int) -> str:
     return current if current == text else current[:-1] + "..."
 
 
+def _draw_marquee(draw, x: int, y: int, width: int, text: str, font, fill: int, seed: int) -> None:
+    text_width, _ = text_size(draw, text, font)
+    if text_width <= width:
+        draw.text((x, y), text, font=font, fill=fill)
+        return
+
+    padded_text = f"{text}   "
+    padded_width, _ = text_size(draw, padded_text, font)
+    cycle = max(1, padded_width)
+    offset = seed % cycle
+    draw.text((x - offset, y), padded_text, font=font, fill=fill)
+    draw.text((x - offset + padded_width, y), padded_text, font=font, fill=fill)
+
+
 def draw_menu(hardware, title: str, items: list[str], selected_index: int, subtitle: str = "") -> None:
     image, draw = make_canvas(hardware)
     fonts = hardware.fonts
@@ -54,7 +69,7 @@ def draw_menu(hardware, title: str, items: list[str], selected_index: int, subti
         label = trim_text(draw, items[item_index], fonts.body, hardware.width - 10)
         if item_index == selected_index:
             draw.rectangle((0, y - 1, hardware.width, y + 9), fill=255)
-            draw.text((4, y - 1), label, font=fonts.body, fill=0)
+            _draw_marquee(draw, 4, y - 1, hardware.width - 8, items[item_index], fonts.body, 0, int(time.time() * 12))
         else:
             draw.text((4, y - 1), label, font=fonts.body, fill=255)
 
@@ -98,16 +113,6 @@ def _draw_signal_bars(draw, width: int, signal_text: str) -> None:
         draw.rectangle((x, base_y - bar_height, x + 2, base_y), fill=255)
 
 
-def _marquee_x(draw, text: str, font, width: int, seed: int) -> tuple[int, str]:
-    text_width, _ = text_size(draw, text, font)
-    if text_width <= width:
-        return 2, text
-    padded_text = f"{text}   "
-    padded_width, _ = text_size(draw, padded_text, font)
-    cycle = max(1, padded_width - width + 6)
-    return 2 - (seed % cycle), padded_text
-
-
 def draw_player(
     hardware,
     title: str,
@@ -124,8 +129,7 @@ def draw_player(
     image, draw = make_canvas(hardware)
     fonts = hardware.fonts
 
-    title_x, title_text = _marquee_x(draw, title, fonts.title, hardware.width - 4, seed)
-    draw.text((title_x, 0), title_text, font=fonts.title, fill=255)
+    _draw_marquee(draw, 2, 0, hardware.width - 4, title, fonts.title, 255, seed)
     draw.text((2, 14), trim_text(draw, subtitle, fonts.body, hardware.width - 4), font=fonts.body, fill=255)
 
     bar_top = 30

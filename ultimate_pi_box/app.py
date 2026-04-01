@@ -150,6 +150,8 @@ class UltimatePiBoxApp:
         component = self.components.get(key)
         if component is None:
             return False
+        if self.current_component is not None and self.current_component is not component:
+            self.current_component.exit(self)
         self.last_interaction_at = time.monotonic()
         self.current_component = component
         self.current_component.enter(self)
@@ -176,17 +178,35 @@ class UltimatePiBoxApp:
     def snapshot_state(self) -> dict[str, object]:
         current_key = None
         current_label = None
+        current_state: dict[str, object] | None = None
         if self.current_component is not None:
             current_key = getattr(self.current_component, "key", "")
             current_label = getattr(self.current_component, "label", "")
+            current_state = self.current_component.get_web_state(self)
         return {
             "menu_items": self.menu_items,
             "selected_index": self.selected_index,
             "current_component_key": current_key,
             "current_component_label": current_label,
+            "current_component_state": current_state,
+            "components": {
+                key: component.get_web_state(self)
+                for key, component in self.components.items()
+            },
             "mock_mode": self.hardware.mock_mode,
             "web_port": self.config.web_port,
         }
+
+    def dispatch_web_command(self, component_key: str, command: str, value: str | None = None) -> bool:
+        component = self.components.get(component_key)
+        if component is None:
+            return False
+        if self.current_component is not component:
+            self.open_component_by_key(component_key)
+        handled = component.web_command(self, command, value)
+        if handled:
+            self.last_interaction_at = time.monotonic()
+        return handled
 
 
 def run() -> None:

@@ -40,6 +40,8 @@ class MyMusicComponent(BaseComponent):
 
     def _load_tracks(self, app) -> list[Path]:
         tracks: list[Path] = []
+        if not app.config.music_dir.exists():
+            return tracks
         for extension in app.config.audio_extensions:
             tracks.extend(sorted(app.config.music_dir.rglob(f"*.{extension}")))
         return sorted(set(tracks))
@@ -135,3 +137,53 @@ class MyMusicComponent(BaseComponent):
             else:
                 self._play_next(app, 1)
         self.render(app)
+
+    def get_web_state(self, app) -> dict[str, object]:
+        self.tracks = self._load_tracks(app)
+        current_track = self.tracks[self.selected_index].stem if self.tracks else None
+        return {
+            "key": self.key,
+            "label": self.label,
+            "items": [track.stem for track in self.tracks[:100]],
+            "selected_index": self.selected_index,
+            "playing": self.playing,
+            "paused": self.paused,
+            "current_item": current_track,
+            "source_path": str(app.config.music_dir),
+        }
+
+    def web_command(self, app, command: str, value: str | None = None) -> bool:
+        self.tracks = self._load_tracks(app)
+        if command == "open" and value is not None and self.tracks:
+            try:
+                self.selected_index = max(0, min(int(value), len(self.tracks) - 1))
+            except ValueError:
+                return False
+            self._play_selected(app)
+            self.render(app)
+            return True
+        if not self.tracks:
+            return False
+        if command == "play_pause":
+            if not self.playing:
+                self._play_selected(app)
+            elif self.player is not None:
+                self.player.toggle_pause()
+                self.paused = not self.paused
+            self.render(app)
+            return True
+        if command == "next":
+            self._play_next(app, 1)
+            self.render(app)
+            return True
+        if command == "previous":
+            self._play_next(app, -1)
+            self.render(app)
+            return True
+        if command == "stop" and self.player is not None:
+            self.player.stop()
+            self.playing = False
+            self.paused = False
+            self.render(app)
+            return True
+        return False

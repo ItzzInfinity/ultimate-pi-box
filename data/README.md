@@ -11,7 +11,7 @@ This directory holds runtime content for the modular app.
 - `youtube.db`
   Optional SQLite database for YouTube metadata.
 - `music/`
-  Local songs for the `My Music` component.
+  Legacy placeholder directory. Local songs are now read from `/home/infinity/Music`.
 
 ## Expected Formats
 

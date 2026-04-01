@@ -98,3 +98,22 @@ for more info on OLED display config refer to
 - Make a separate directory for each component to keep the code organized and modular. Each directory will contain the necessary files and modules related to that specific component, allowing for easier maintenance and future enhancements. And just the final main file will be outside the directory and after writing the code make a README file where usage and detailed explanation will be there also requirements and installation steps will be there.
 - Make a progress.md file where the progress of the project will be updated regularly, and any challenges or issues faced during development will be documented along with their solutions. This will help in tracking the development process and provide insights for future improvements.
 
+----
+# ISSUES
+- the last line in OLED Display overlapping each other, need to find a way to prevent that. - **Closed**
+- after placing songs in [app.config.music_dir](/home/infinity/Desktop/v2/data/music) its still showing
+                "Local playback module"
+                "is not wired yet."
+                "Place songs under"
+                str(app.config.music_dir)
+            "Long press to exit" 
+            Where also the lst line is overlapping with the previous line, need to find a way to fix it. - **Closed**
+- Internet Radio is not working properly, need to find a way to fix it. - **Closed**
+- For the screen saver, |||| <-Small to big is not working properly, where I want to show it as increasing in size from small in height (these pipes) - **Closed**
+- Also implement WEB interface for remote control and management of the Ultimate Pi Sound Box from a smartphone or computer using Flask or FastAPI in localhost. where I can access it from the browser after connecting to the same network and entering the IP address of the Raspberry Pi in the browser. - **Closed**
+- For Clock screen saver thing Volume and date is overlapping each other, need to find a way to prevent that. - **Closed**
+- Scrolling text is not working properly, need to find a way to implement it correctly. - Horizontal scrolling not working when the text is bigger than the display width. - **Closed**
+- No place in menu for DLNA/UPnP Support, need to find a way to add it in the menu and implement it. - **Closed**
+  - DLNA/UPnP discovery, browsing, and basic playback wiring added in the component.
+  - V2 for web interface: Need to be interactive, colorful, modern looking, where I can see the current song playing and fetch the every list like music list, radio station list, YouTube playlist and also have the option to play/pause/next/previous song from the web interface. - **Closed**
+- Need to shift the local music directory path to "/home/infinity/Music" - **PRIORITY HIGH** - **Closed**

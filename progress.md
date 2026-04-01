@@ -17,6 +17,10 @@
 - Wired `Internet Radio` to load `data/radio_stations.csv` and start streams through VLC.
 - Added `DLNA/UPnP` to the main menu.
 - Added a minimal Flask web interface for remote control on the local network.
+- Shifted local music scanning to `/home/infinity/Music`.
+- Improved marquee scrolling for long OLED titles.
+- Upgraded the web UI to show live component state and media lists with transport actions.
+- Replaced the DLNA placeholder with discovery, browsing, and basic network playback wiring.
 
 ### Shared Runtime Added
 
@@ -33,9 +37,11 @@
 - Add YouTube playback from CSV and SQLite sources.
 - Add encoder-driven Wi-Fi password entry.
 - Validate VLC, Flask, GPIO, and OLED behavior on the Raspberry Pi hardware.
+- Add direct YouTube playback instead of list-only browsing.
 
 ### Notes
 
 - The current repository did not contain stable `stations.csv`, `menu.json`, or YouTube source data, so the rewrite is being structured first.
 - This directory is intended to become the final maintainable version instead of extending the monolithic prototype further.
 - Internet radio and local music are now wired at the component level, but both still need device-level validation on the Pi because this workspace is not attached to the target hardware.
+- DLNA depends on `upnpclient` being installed on the Pi before discovery works.
