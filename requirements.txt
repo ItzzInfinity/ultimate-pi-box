@@ -1,0 +1,7 @@
+gpiozero
+luma.oled
+Pillow
+requests
+yt-dlp
+dbus-python
+Flask

@@ -1,0 +1,38 @@
+[
+  {
+    "key": "my_music",
+    "label": "My Music"
+  },
+  {
+    "key": "youtube_online",
+    "label": "Youtube Online"
+  },
+  {
+    "key": "connect_phone",
+    "label": "Connect Phone"
+  },
+  {
+    "key": "internet_radio",
+    "label": "Internet Radio"
+  },
+  {
+    "key": "my_ip",
+    "label": "MyIP"
+  },
+  {
+    "key": "bt_settings",
+    "label": "BT Settings"
+  },
+  {
+    "key": "system_volume",
+    "label": "System Volume"
+  },
+  {
+    "key": "dlna_upnp",
+    "label": "DLNA/UPnP"
+  },
+  {
+    "key": "shutdown",
+    "label": "ShutDown"
+  }
+]
