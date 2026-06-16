@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .config import build_config
 from .hardware import create_hardware
+from .mpd_oled import MpdOledController
 from .rendering import draw_idle_clock, draw_menu
 from .components.bt_settings import BTSettingsComponent
 from .components.connect_phone import ConnectPhoneComponent
@@ -25,6 +26,7 @@ class UltimatePiBoxApp:
     def __init__(self, root_dir: Path | None = None) -> None:
         self.config = build_config(root_dir)
         self.hardware = create_hardware(self.config)
+        self.mpd_oled = MpdOledController(self.config)
         self.event_queue: deque[tuple[str, int | None]] = deque()
         self.menu_items = self._load_menu()
         self.selected_index = 0
@@ -122,6 +124,7 @@ class UltimatePiBoxApp:
 
     def handle_rotation(self, direction: int) -> None:
         self.last_interaction_at = time.monotonic()
+        self.mpd_oled.stop_if_owned_by("idle")
         if self.current_component is None:
             self.selected_index = (self.selected_index + direction) % len(self.menu_items)
             self.render_home(force=True)
@@ -130,6 +133,7 @@ class UltimatePiBoxApp:
 
     def handle_short_press(self) -> None:
         self.last_interaction_at = time.monotonic()
+        self.mpd_oled.stop_if_owned_by("idle")
         if self.current_component is None:
             self.open_selected_component()
             return
@@ -137,6 +141,7 @@ class UltimatePiBoxApp:
 
     def handle_long_press(self) -> None:
         self.last_interaction_at = time.monotonic()
+        self.mpd_oled.stop_if_owned_by("idle")
         if self.current_component is None:
             self.render_home(force=True)
             return
@@ -161,16 +166,21 @@ class UltimatePiBoxApp:
         if self.current_component is not None:
             self.current_component.exit(self)
         self.current_component = None
+        self.mpd_oled.stop()
         self.render_home(force=True)
 
     def render_home(self, force: bool = False) -> None:
         inactive_for = time.monotonic() - self.last_interaction_at
         if inactive_for >= self.config.idle_timeout_seconds:
+            if self.mpd_oled.start("idle"):
+                self.last_idle_draw_at = time.monotonic()
+                return
             if force or (time.monotonic() - self.last_idle_draw_at) >= 1.0:
                 draw_idle_clock(self.hardware)
                 self.last_idle_draw_at = time.monotonic()
             return
 
+        self.mpd_oled.stop_if_owned_by("idle")
         subtitle = "mock mode" if self.hardware.mock_mode else "ready"
         labels = [item["label"] for item in self.menu_items]
         draw_menu(self.hardware, "Ultimate Pi Box", labels, self.selected_index, subtitle)
@@ -193,6 +203,7 @@ class UltimatePiBoxApp:
                 key: component.get_web_state(self)
                 for key, component in self.components.items()
             },
+            "mpd_oled": self.mpd_oled.status(),
             "mock_mode": self.hardware.mock_mode,
             "web_port": self.config.web_port,
         }

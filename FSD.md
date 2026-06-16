@@ -117,3 +117,17 @@ for more info on OLED display config refer to
   - DLNA/UPnP discovery, browsing, and basic playback wiring added in the component.
   - V2 for web interface: Need to be interactive, colorful, modern looking, where I can see the current song playing and fetch the every list like music list, radio station list, YouTube playlist and also have the option to play/pause/next/previous song from the web interface. - **Closed**
 - Need to shift the local music directory path to "/home/infinity/Music" - **PRIORITY HIGH** - **Closed**
+
+# DESIGN PIVOT
+- Initially the oled display was self made from scratch with some vague idea described.
+- But after doing some research and looking at some existing projects, I found that there are some libraries available that can help me to easily implement the OLED display functionality. So I decided to use the mpd_oled library which is specifically designed for displaying information from MPD (Music Player Daemon) on an OLED display. This library provides a lot of features and options for customizing the display, which will make it easier for me to implement the desired functionality for my project.
+- I Made some documents and diagrams to visualize the design and architecture of the system, which will help to generate and integrate c++ code of mpd_oled with existing python codebase. This will allow me to leverage the capabilities of the mpd_oled library while still maintaining the overall structure and functionality of my project.
+- From now any music screen will be mpd_oled based (i.e. My Music, YouTube Online, Connect Phone, Internet Radio, DLNA/UPnP Support)
+- and I have to declare rules for my self which will prevent me from dusplaying overlapping text on the OLED display for other list / Rotary Encoder based menu
+- And for the screen saver part there is already a feature in mpd_oled library which can be used to display the current time and date when nothing is playing, so I will use that feature instead of implementing it from scratch. This will save me a lot of time and effort, and also ensure that the screen saver functionality is implemented correctly and efficiently.
+- FOR NOW FREEZE EVERY FUNCTION AS IT IS. ALTHOUGH IS HAS A LOT OF BUGS RIGHT NOW, BUT LET'S ONE AT A TIME
+- DESIGN PIVOT STATUS
+  - `mpd_oled` source has been vendored into the project and wrapped from Python.
+  - idle / screen saver display ownership is now designed to hand off to `mpd_oled`.
+  - media-screen handoff is prepared in the Python architecture but intentionally disabled by default until each playback backend is migrated to MPD-compatible state.
+  - menu / list / rotary-encoder screens stay Python-rendered to avoid overlapping text and to keep interaction predictable.

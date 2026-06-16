@@ -150,6 +150,16 @@ HTML = """
         {% else %}
         <div class="dim">No active track selected.</div>
         {% endif %}
+        <div class="dim mono" style="margin-top:10px;">
+          mpd_oled:
+          {% if state.mpd_oled.running %}
+          running (owner={{ state.mpd_oled.owner }})
+          {% elif state.mpd_oled.available %}
+          available
+          {% else %}
+          unavailable
+          {% endif %}
+        </div>
       </div>
     </section>
 

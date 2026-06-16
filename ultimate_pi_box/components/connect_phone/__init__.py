@@ -8,6 +8,7 @@ from ...system import get_paired_devices, run_command
 class ConnectPhoneComponent(BaseComponent):
     key = "connect_phone"
     label = "Connect Phone"
+    media_screen = True
 
     def render(self, app) -> None:
         result = run_command(["bluetoothctl", "devices", "Connected"])

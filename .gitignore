@@ -1,2 +1,8 @@
-OLED_Demo/
 plan-oledDisplayEventsDocumentation.md.prompt.md
+.local/
+OLED_Demo/mpd_oled/autom4te.cache/
+OLED_Demo/mpd_oled/src/.deps/
+OLED_Demo/mpd_oled/src/.libs/
+OLED_Demo/mpd_oled/src/*.o
+OLED_Demo/mpd_oled/src/mpd_oled
+OLED_Demo/mpd_oled/src/mpd_oled_cava

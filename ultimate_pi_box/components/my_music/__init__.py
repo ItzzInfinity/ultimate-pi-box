@@ -10,6 +10,7 @@ from ...rendering import draw_menu, draw_message, draw_player, format_seconds
 class MyMusicComponent(BaseComponent):
     key = "my_music"
     label = "My Music"
+    media_screen = True
 
     def __init__(self) -> None:
         self.selected_index = 0
@@ -35,6 +36,7 @@ class MyMusicComponent(BaseComponent):
     def exit(self, app) -> None:
         if self.player is not None:
             self.player.stop()
+        app.mpd_oled.stop_if_owned_by(self.key)
         self.playing = False
         self.paused = False
 
@@ -53,6 +55,7 @@ class MyMusicComponent(BaseComponent):
         self.playing = True
         self.paused = False
         self.seed = 0
+        app.mpd_oled.start(self.key)
 
     def _play_next(self, app, step: int) -> None:
         if not self.tracks:
@@ -77,6 +80,9 @@ class MyMusicComponent(BaseComponent):
         if not self.playing:
             labels = [track.stem for track in self.tracks]
             draw_menu(app.hardware, self.label, labels, self.selected_index, f"{len(labels)} tracks")
+            return
+
+        if app.mpd_oled.is_owned_by(self.key):
             return
 
         track = self.tracks[self.selected_index]
@@ -184,6 +190,7 @@ class MyMusicComponent(BaseComponent):
             self.player.stop()
             self.playing = False
             self.paused = False
+            app.mpd_oled.stop_if_owned_by(self.key)
             self.render(app)
             return True
         return False

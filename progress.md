@@ -21,6 +21,10 @@
 - Improved marquee scrolling for long OLED titles.
 - Upgraded the web UI to show live component state and media lists with transport actions.
 - Replaced the DLNA placeholder with discovery, browsing, and basic network playback wiring.
+- Integrated a vendored `mpd_oled` runtime wrapper for the display pivot.
+- Switched idle/screensaver ownership toward `mpd_oled`.
+- Added local build and MPD FIFO helper scripts for the vendored `mpd_oled` source.
+- Kept media handoff disabled by default to preserve the frozen VLC-based feature behavior until playback backends are migrated.
 
 ### Shared Runtime Added
 
@@ -38,6 +42,7 @@
 - Add encoder-driven Wi-Fi password entry.
 - Validate VLC, Flask, GPIO, and OLED behavior on the Raspberry Pi hardware.
 - Add direct YouTube playback instead of list-only browsing.
+- Migrate media playback sources one by one to MPD-compatible backends, then enable `mpd_oled_media_handoff`.
 
 ### Notes
 
@@ -45,3 +50,4 @@
 - This directory is intended to become the final maintainable version instead of extending the monolithic prototype further.
 - Internet radio and local music are now wired at the component level, but both still need device-level validation on the Pi because this workspace is not attached to the target hardware.
 - DLNA depends on `upnpclient` being installed on the Pi before discovery works.
+- `mpd_oled` media handoff is intentionally disabled until the relevant playback source is MPD-backed, to avoid stale or incorrect metadata on the OLED.

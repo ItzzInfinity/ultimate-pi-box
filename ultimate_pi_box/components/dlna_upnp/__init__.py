@@ -15,6 +15,7 @@ except Exception:  # pragma: no cover - depends on runtime dependency
 class DLNAUPnPComponent(BaseComponent):
     key = "dlna_upnp"
     label = "DLNA/UPnP"
+    media_screen = True
 
     def __init__(self) -> None:
         self.devices = []
@@ -40,6 +41,7 @@ class DLNAUPnPComponent(BaseComponent):
     def exit(self, app) -> None:
         if self.player is not None:
             self.player.stop()
+        app.mpd_oled.stop_if_owned_by(self.key)
         self.playing_item = None
 
     def _discover(self) -> None:
@@ -134,6 +136,11 @@ class DLNAUPnPComponent(BaseComponent):
         if item["resource"] and self.player is not None:
             self.player.play_url(item["resource"])
             self.playing_item = item["title"]
+            self.seed = 0
+
+    def _start_display_handoff(self, app) -> None:
+        if self.playing_item:
+            app.mpd_oled.start(self.key)
 
     def render(self, app) -> None:
         if upnpclient is None:
@@ -167,6 +174,8 @@ class DLNAUPnPComponent(BaseComponent):
             return
 
         if self.playing_item:
+            if app.mpd_oled.is_owned_by(self.key):
+                return
             draw_player(
                 app.hardware,
                 self.playing_item,
@@ -223,12 +232,14 @@ class DLNAUPnPComponent(BaseComponent):
             return
 
         self._open_selected_item()
+        self._start_display_handoff(app)
         self.render(app)
 
     def on_long_press(self, app) -> None:
         if self.playing_item and self.player is not None:
             self.player.stop()
             self.playing_item = None
+            app.mpd_oled.stop_if_owned_by(self.key)
             self.render(app)
             return
         if self.mode == "items" and len(self.browser_stack) > 1:
@@ -252,6 +263,7 @@ class DLNAUPnPComponent(BaseComponent):
             self.seed += 2
             if self.player is not None and not self.player.is_running():
                 self.playing_item = None
+                app.mpd_oled.stop_if_owned_by(self.key)
             self.render(app)
 
     def get_web_state(self, app) -> dict[str, object]:

@@ -4,6 +4,7 @@ from __future__ import annotations
 class BaseComponent:
     key = ""
     label = ""
+    media_screen = False
 
     def enter(self, app) -> None:
         self.render(app)

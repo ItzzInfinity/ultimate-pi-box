@@ -10,6 +10,7 @@ from ...rendering import draw_message, draw_menu, draw_player
 class InternetRadioComponent(BaseComponent):
     key = "internet_radio"
     label = "Internet Radio"
+    media_screen = True
 
     def __init__(self) -> None:
         self.selected_index = 0
@@ -32,6 +33,7 @@ class InternetRadioComponent(BaseComponent):
     def exit(self, app) -> None:
         if self.player is not None:
             self.player.stop()
+        app.mpd_oled.stop_if_owned_by(self.key)
         self.playing = False
 
     def _load_stations(self, app) -> None:
@@ -46,19 +48,20 @@ class InternetRadioComponent(BaseComponent):
                 if name and url:
                     self.stations.append((name, url))
 
-    def _play_selected(self) -> None:
+    def _play_selected(self, app) -> None:
         if not self.stations or self.player is None:
             return
         _, station_url = self.stations[self.selected_index]
         self.player.play_url(station_url)
         self.playing = True
         self.seed = 0
+        app.mpd_oled.start(self.key)
 
-    def _play_relative(self, step: int) -> None:
+    def _play_relative(self, app, step: int) -> None:
         if not self.stations:
             return
         self.selected_index = (self.selected_index + step) % len(self.stations)
-        self._play_selected()
+        self._play_selected(app)
 
     def render(self, app) -> None:
         if not self.stations:
@@ -77,6 +80,8 @@ class InternetRadioComponent(BaseComponent):
         if not self.playing:
             labels = [name for name, _ in self.stations]
             draw_menu(app.hardware, self.label, labels, self.selected_index, f"{len(labels)} stations")
+            return
+        if app.mpd_oled.is_owned_by(self.key):
             return
         station_name, station_url = self.stations[self.selected_index]
         controls = ["<<", "[]", ">>", "L"]
@@ -108,18 +113,20 @@ class InternetRadioComponent(BaseComponent):
             self.render(app)
             return
         if not self.playing:
-            self._play_selected()
+            self._play_selected(app)
             self.render(app)
             return
         if self.control_index == 0:
-            self._play_relative(-1)
+            self._play_relative(app, -1)
         elif self.control_index == 1 and self.player is not None:
             self.player.stop()
             self.playing = False
+            app.mpd_oled.stop_if_owned_by(self.key)
         elif self.control_index == 2:
-            self._play_relative(1)
+            self._play_relative(app, 1)
         elif self.control_index == 3:
             self.playing = False
+            app.mpd_oled.stop_if_owned_by(self.key)
         self.render(app)
 
     def tick(self, app) -> None:
@@ -149,30 +156,32 @@ class InternetRadioComponent(BaseComponent):
                 self.selected_index = max(0, min(int(value), len(self.stations) - 1))
             except ValueError:
                 return False
-            self._play_selected()
+            self._play_selected(app)
             self.render(app)
             return True
         if not self.stations:
             return False
         if command == "play_pause":
             if not self.playing:
-                self._play_selected()
+                self._play_selected(app)
             elif self.player is not None:
                 self.player.stop()
                 self.playing = False
+                app.mpd_oled.stop_if_owned_by(self.key)
             self.render(app)
             return True
         if command == "next":
-            self._play_relative(1)
+            self._play_relative(app, 1)
             self.render(app)
             return True
         if command == "previous":
-            self._play_relative(-1)
+            self._play_relative(app, -1)
             self.render(app)
             return True
         if command == "stop" and self.player is not None:
             self.player.stop()
             self.playing = False
+            app.mpd_oled.stop_if_owned_by(self.key)
             self.render(app)
             return True
         return False

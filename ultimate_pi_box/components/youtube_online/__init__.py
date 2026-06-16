@@ -10,6 +10,7 @@ from ...rendering import draw_menu, draw_message
 class YoutubeOnlineComponent(BaseComponent):
     key = "youtube_online"
     label = "Youtube Online"
+    media_screen = True
 
     def __init__(self) -> None:
         self.selected_index = 0
