@@ -129,7 +129,11 @@ def draw_player(
     image, draw = make_canvas(hardware)
     fonts = hardware.fonts
 
-    _draw_marquee(draw, 2, 0, hardware.width - 4, title, fonts.title, 255, seed)
+    wifi_reserved = 16
+    bars = wifi_signal_bars(100 if get_ip_address() != "No Network" else 0)
+    _draw_signal_bars(draw, hardware.width, bars)
+
+    _draw_marquee(draw, 2, 0, hardware.width - 4 - wifi_reserved, title, fonts.title, 255, seed)
     draw.text((2, 14), trim_text(draw, subtitle, fonts.body, hardware.width - 4), font=fonts.body, fill=255)
 
     bar_top = 30
@@ -152,13 +156,35 @@ def draw_player(
             draw.text((x + 2, 50), icon, font=fonts.body, fill=255)
 
     if footer_left:
-        draw.text((2, 24), trim_text(draw, footer_left, fonts.small, 52), font=fonts.small, fill=255)
+        draw.text((2, 24), trim_text(draw, footer_left, fonts.small, 38), font=fonts.small, fill=255)
+
+    volume_text = f"{get_volume_percent()}%"
+    volume_width, _ = text_size(draw, volume_text, fonts.small)
+    draw.text(((hardware.width - volume_width) // 2, 24), volume_text, font=fonts.small, fill=255)
+
     if footer_right:
-        right = trim_text(draw, footer_right, fonts.small, 52)
+        right = trim_text(draw, footer_right, fonts.small, 38)
         right_width, _ = text_size(draw, right, fonts.small)
         draw.text((hardware.width - right_width - 2, 24), right, font=fonts.small, fill=255)
 
     _draw_equalizer(draw, hardware.width, hardware.height, seed)
+    hardware.display(image)
+
+
+def draw_search(hardware, title: str, query: str, current_char: str) -> None:
+    image, draw = make_canvas(hardware)
+    fonts = hardware.fonts
+
+    draw.text((2, 0), title, font=fonts.title, fill=255)
+    draw.text((2, 16), f"Query: {query or '_'}", font=fonts.body, fill=255)
+
+    label = "DEL" if current_char == "<DEL>" else "OK" if current_char == "<OK>" else current_char
+    char_width, _ = text_size(draw, label, fonts.title)
+    box_x = (hardware.width - char_width - 12) // 2
+    draw.rectangle((box_x, 32, box_x + char_width + 10, 50), outline=255)
+    draw.text((box_x + 5, 34), label, font=fonts.title, fill=255)
+
+    draw.text((2, hardware.height - 9), "Press=add  Long=done", font=fonts.small, fill=255)
     hardware.display(image)
 
 

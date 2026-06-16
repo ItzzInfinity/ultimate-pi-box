@@ -150,6 +150,16 @@ def bluetooth_disconnect(mac_address: str) -> None:
     run_command(["bluetoothctl", "disconnect", mac_address], timeout=15.0)
 
 
+def estimate_bitrate_kbps(file_path, duration_seconds: int) -> int:
+    if duration_seconds <= 0:
+        return 0
+    try:
+        size_bytes = file_path.stat().st_size
+    except OSError:
+        return 0
+    return int((size_bytes * 8) / duration_seconds / 1000)
+
+
 def wifi_signal_bars(signal: int) -> str:
     if signal >= 80:
         return "||||"

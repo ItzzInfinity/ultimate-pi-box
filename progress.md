@@ -1,5 +1,53 @@
 # Progress Log
 
+## 2026-06-16
+
+### Completed (ROADMAP.md actions 1-5)
+
+- **Action 1 — Repo hygiene:** untracked 85 generated files (`__pycache__/*.pyc`, `desktop.ini`)
+  from git via `git rm --cached`, and added `__pycache__/`, `*.pyc`, `desktop.ini` to `.gitignore`
+  so they stop reappearing as noise in future diffs.
+- **Action 2 — My Music search:** added an in-list `[Search]` entry at the top of the track
+  browser. Selecting it opens a rotary-encoder character-entry screen (`draw_search` in
+  `rendering.py`) built from `SEARCH_CHARSET` (a-z, 0-9, space, `<DEL>`, `<OK>`); rotate cycles the
+  current character, short-press appends it (or deletes/confirms), long-press cancels back to the
+  list without exiting the component. Confirming filters `self.filtered` by case-insensitive
+  substring match against track filenames; an empty query clears the filter.
+- **Action 3 — My Music shuffle:** added a `shuffle_mode` flag distinct from `repeat_mode`. The
+  4th player control now cycles `off -> shuffle -> repeat -> off` and shows `S`/`R`/`-` on the
+  OLED. Shuffle picks a random next track (excluding the current one) on next/previous/auto-advance;
+  repeat and sequential playback behavior are unchanged from before.
+- **Action 4 — My Music bitrate:** added `estimate_bitrate_kbps()` to `system.py` (file size over
+  known duration, no new dependency). The player screen's footer-right now shows real
+  `NNNkbps` once duration is known, replacing the previous static track-count text.
+- **Action 5 — Volume + WiFi tile on player screen:** `draw_player()` in `rendering.py` now always
+  draws WiFi signal bars in the top-right corner (title marquee width is reduced to make room) and
+  the current system volume percentage centered in the footer row. This is additive to
+  `draw_player`, so `internet_radio` and `dlna_upnp` (which reuse the same renderer) automatically
+  pick it up with no code changes on their end.
+
+### Verification performed
+
+- Imported all touched modules to confirm no syntax/import errors.
+- Scripted smoke test driving `MyMusicComponent` end-to-end in mock-hardware mode: loaded 3 fake
+  tracks, entered search mode, typed "alpha", confirmed filter narrowed to the 2 matching tracks,
+  played a filtered result, and cycled shuffle -> repeat -> off via the 4th control — all assertions
+  passed.
+- Called `draw_player`/`draw_search` directly against the mock OLED bundle to confirm they render
+  without exceptions, including a radio-style call (no `my_music`-specific args) to confirm
+  `internet_radio`/`dlna_upnp` remain compatible with the changed renderer.
+- Ran `python main.py` in the background for several seconds in mock mode; no exceptions in the
+  log.
+
+### Notes
+
+- Real hardware validation (actual VLC bitrate accuracy, OLED corner-spacing legibility, rotary
+  feel of the character-entry screen) still needs to happen on the Pi — this environment only has
+  mock GPIO/OLED.
+- Roadmap actions 6+ (floating corner bar graph, YouTube playback, Connect Phone DBus metadata, BT
+  Settings controls, MyIP WiFi connect flow, mpd_oled media handoff migration, realtime web UI) are
+  still open — see `ROADMAP.md`.
+
 ## 2026-04-01
 
 ### Completed

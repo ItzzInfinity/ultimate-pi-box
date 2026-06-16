@@ -27,7 +27,7 @@ Work top to bottom. Do not start action N+1 until action N's verification step p
 Already-closed items from `FSD.md` "ISSUES" (overlap text, music_dir path, scrolling, screensaver
 sizing) are **not** repeated below — they are done.
 
-## 1. Repo hygiene (do first, zero functional risk)
+## 1. Repo hygiene (do first, zero functional risk) — DONE 2026-06-16
 
 - **Goal:** stop tracking generated/junk files (`__pycache__/*.pyc`, `desktop.ini`) that currently
   show as modified in `git status`, so future diffs are signal not noise.
@@ -35,7 +35,7 @@ sizing) are **not** repeated below — they are done.
 - **Verify:** `git status` shows no `__pycache__` or `desktop.ini` entries after the change; app
   still runs (`python main.py`).
 
-## 2. My Music: add search
+## 2. My Music: add search — DONE 2026-06-16
 
 - **Goal:** FSD 5.1 requires "a search function to quickly find specific tracks." Add a search
   mode to `MyMusicComponent` (`ultimate_pi_box/components/my_music/__init__.py`) — short-press a
@@ -43,7 +43,7 @@ sizing) are **not** repeated below — they are done.
 - **Verify:** with 2+ tracks in `music_dir`, entering search and rotating narrows the visible list;
   selecting a filtered result plays the correct file.
 
-## 3. My Music: add shuffle (distinct from repeat)
+## 3. My Music: add shuffle (distinct from repeat) — DONE 2026-06-16
 
 - **Goal:** spec calls for shuffle *and* repeat as separate modes; only repeat exists today
   (`repeat_mode` toggle, control index 3). Add a shuffle flag and randomized "next track" order
@@ -51,7 +51,7 @@ sizing) are **not** repeated below — they are done.
 - **Verify:** with shuffle on, repeatedly pressing "next" does not always advance sequentially;
   with shuffle off, behavior matches current sequential order exactly (no regression).
 
-## 4. My Music: real bitrate in footer
+## 4. My Music: real bitrate in footer — DONE 2026-06-16
 
 - **Goal:** FSD 5.1 wants current bitrate displayed. `draw_player` footer currently shows
   `"{len(self.tracks)} files"` (`my_music/__init__.py` render method) instead of bitrate. Compute
@@ -60,7 +60,7 @@ sizing) are **not** repeated below — they are done.
 - **Verify:** footer value changes between two files known to have different bitrates (e.g. a
   128kbps vs 320kbps mp3), and matches `ffprobe`/file metadata.
 
-## 5. My Music: volume + WiFi signal tile on player screen
+## 5. My Music: volume + WiFi signal tile on player screen — DONE 2026-06-16
 
 - **Goal:** FSD 5.1 wants volume and WiFi signal strength visible during playback, not just on the
   idle clock screen (`draw_idle_clock` in `rendering.py` currently owns those, `draw_player` does
