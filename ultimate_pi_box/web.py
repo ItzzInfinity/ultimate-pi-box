@@ -1,7 +1,18 @@
 from __future__ import annotations
 
+import json
+import time
+
 try:
-    from flask import Flask, jsonify, redirect, render_template_string, request, url_for
+    from flask import (
+        Flask,
+        Response,
+        jsonify,
+        redirect,
+        render_template_string,
+        request,
+        url_for,
+    )
 except Exception:  # pragma: no cover - depends on local environment
     Flask = None
 
@@ -125,6 +136,9 @@ HTML = """
     .dim { opacity: 0.72; }
     .mono { font-family: "Consolas", monospace; }
     .wide { grid-column: 1 / -1; }
+    form.inline { display: inline; margin: 0; }
+    .live-dot { color: #22b07d; font-size: 12px; transition: opacity .3s; }
+    .live-dot.stale { color: #b0431f; opacity: 0.4; }
     @media (max-width: 860px) {
       .hero, .grid { grid-template-columns: 1fr; }
     }
@@ -143,14 +157,16 @@ HTML = """
         </div>
       </div>
       <div class="panel">
-        <h2>Now Playing</h2>
-        {% if state.current_component_state and state.current_component_state.get("current_item") %}
-        <div><strong>{{ state.current_component_state.get("current_item") }}</strong></div>
-        <div class="dim">{{ state.current_component_label }}</div>
-        {% else %}
-        <div class="dim">No active track selected.</div>
-        {% endif %}
-        <div class="dim mono" style="margin-top:10px;">
+        <h2>Now Playing <span class="live-dot" id="live-dot" title="live">&#9679;</span></h2>
+        <div id="now-playing">
+          {% if state.current_component_state and state.current_component_state.get("current_item") %}
+          <div><strong>{{ state.current_component_state.get("current_item") }}</strong></div>
+          <div class="dim">{{ state.current_component_label }}</div>
+          {% else %}
+          <div class="dim">No active track selected.</div>
+          {% endif %}
+        </div>
+        <div class="dim mono" style="margin-top:10px;" id="mpd-status">
           mpd_oled:
           {% if state.mpd_oled.running %}
           running (owner={{ state.mpd_oled.owner }})
@@ -178,7 +194,9 @@ HTML = """
         <h2>Open Screen</h2>
         <div class="menu-links">
           {% for item in state.menu_items %}
-          <a class="button ghost" href="{{ url_for('open_component', key=item['key']) }}">{{ item['label'] }}</a>
+          <form class="inline" method="post" action="{{ url_for('open_component', key=item['key']) }}">
+            <button class="ghost" type="submit">{{ item['label'] }}</button>
+          </form>
           {% endfor %}
         </div>
       </div>
@@ -186,13 +204,21 @@ HTML = """
       <div class="panel wide">
         <h2>Transport</h2>
         <div class="transport">
-          <a class="button" href="{{ url_for('component_command', key='my_music', command='previous') }}">Music Prev</a>
-          <a class="button alt" href="{{ url_for('component_command', key='my_music', command='play_pause') }}">Music Play/Pause</a>
-          <a class="button" href="{{ url_for('component_command', key='my_music', command='next') }}">Music Next</a>
-          <a class="button ghost" href="{{ url_for('component_command', key='internet_radio', command='previous') }}">Radio Prev</a>
-          <a class="button alt" href="{{ url_for('component_command', key='internet_radio', command='play_pause') }}">Radio Play/Stop</a>
-          <a class="button ghost" href="{{ url_for('component_command', key='internet_radio', command='next') }}">Radio Next</a>
-          <a class="button ghost" href="{{ url_for('component_command', key='dlna_upnp', command='refresh') }}">DLNA Refresh</a>
+          {% macro cmd(key, command, label, cls='') -%}
+          <form class="inline" method="post" action="{{ url_for('component_command', key=key, command=command) }}">
+            <button class="{{ cls }}" type="submit">{{ label }}</button>
+          </form>
+          {%- endmacro %}
+          {{ cmd('my_music', 'previous', 'Music Prev') }}
+          {{ cmd('my_music', 'play_pause', 'Music Play/Pause', 'alt') }}
+          {{ cmd('my_music', 'next', 'Music Next') }}
+          {{ cmd('internet_radio', 'previous', 'Radio Prev', 'ghost') }}
+          {{ cmd('internet_radio', 'play_pause', 'Radio Play/Stop', 'alt') }}
+          {{ cmd('internet_radio', 'next', 'Radio Next', 'ghost') }}
+          {{ cmd('youtube_online', 'play_pause', 'YT Play/Pause', 'alt') }}
+          {{ cmd('youtube_online', 'stop', 'YT Stop', 'ghost') }}
+          {{ cmd('connect_phone', 'play_pause', 'Phone Play/Pause', 'ghost') }}
+          {{ cmd('dlna_upnp', 'refresh', 'DLNA Refresh', 'ghost') }}
         </div>
       </div>
 
@@ -210,7 +236,10 @@ HTML = """
           {% for item in component.get("items", [])[:14] %}
           <li class="row">
             <span>{{ item }}</span>
-            <a class="button ghost" href="{{ url_for('component_command', key=component_key, command='open', value=loop.index0) }}">Open</a>
+            <form class="inline" method="post" action="{{ url_for('component_command', key=component_key, command='open') }}">
+              <input type="hidden" name="value" value="{{ loop.index0 }}">
+              <button class="ghost" type="submit">Open</button>
+            </form>
           </li>
           {% else %}
           <li class="row dim"><span>No items available.</span></li>
@@ -220,6 +249,35 @@ HTML = """
       {% endfor %}
     </section>
   </div>
+  <script>
+    // Action 17: real-time "Now Playing" via Server-Sent Events (no reload).
+    (function () {
+      var dot = document.getElementById('live-dot');
+      var np = document.getElementById('now-playing');
+      var mpd = document.getElementById('mpd-status');
+      if (!window.EventSource) { if (dot) dot.style.display = 'none'; return; }
+      var source = new EventSource('/events');
+      source.onmessage = function (event) {
+        var s;
+        try { s = JSON.parse(event.data); } catch (e) { return; }
+        if (dot) dot.classList.remove('stale');
+        var cs = s.current_component_state;
+        var item = cs && cs.current_item;
+        if (item) {
+          np.innerHTML = '<div><strong></strong></div><div class="dim"></div>';
+          np.children[0].firstChild.textContent = item;
+          np.children[1].textContent = s.current_component_label || '';
+        } else {
+          np.innerHTML = '<div class="dim">No active track selected.</div>';
+        }
+        var m = s.mpd_oled || {};
+        var text = 'mpd_oled: ' + (m.running ? ('running (owner=' + m.owner + ')')
+          : (m.available ? 'available' : 'unavailable'));
+        mpd.textContent = text;
+      };
+      source.onerror = function () { if (dot) dot.classList.add('stale'); };
+    })();
+  </script>
 </body>
 </html>
 """
@@ -238,7 +296,28 @@ def create_web_app(controller):
     def status():
         return jsonify(controller.snapshot_state())
 
-    @app.route("/open/<key>", methods=["GET"])
+    @app.route("/events", methods=["GET"])
+    def events():
+        def stream():
+            last = None
+            # Cap the stream so a forgotten browser tab can't pin a worker forever.
+            for _ in range(3600):
+                try:
+                    payload = json.dumps(controller.live_state())
+                except Exception:
+                    payload = json.dumps({"error": "state unavailable"})
+                if payload != last:
+                    last = payload
+                    yield f"data: {payload}\n\n"
+                else:
+                    yield ": keep-alive\n\n"
+                time.sleep(1.0)
+
+        return Response(stream(), mimetype="text/event-stream")
+
+    # State-changing routes are POST-only so a cross-site GET (image tag,
+    # link prefetch, etc.) cannot drive the box without an explicit form submit.
+    @app.route("/open/<key>", methods=["POST"])
     def open_component(key: str):
         controller.open_component_by_key(key)
         return redirect(url_for("home"))
@@ -256,7 +335,7 @@ def create_web_app(controller):
             controller.handle_long_press()
         return redirect(url_for("home"))
 
-    @app.route("/component/<key>/<command>", methods=["GET", "POST"])
+    @app.route("/component/<key>/<command>", methods=["POST"])
     def component_command(key: str, command: str):
         value = request.values.get("value")
         controller.dispatch_web_command(key, command, value)

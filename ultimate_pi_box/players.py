@@ -39,18 +39,6 @@ class VlcRcProcess:
     def play_url(self, url: str) -> None:
         self.play_args([url])
 
-    def play_shell(self, shell_command: str) -> None:
-        self.stop()
-        command = f'{shell_command} | {" ".join(self._base_args())} -'
-        self.process = subprocess.Popen(
-            command,
-            shell=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-        )
-        time.sleep(0.6)
-
     def stop(self) -> None:
         if self.process is not None:
             self.process.terminate()

@@ -9,3 +9,4 @@ OLED_Demo/mpd_oled/src/mpd_oled_cava
 __pycache__/
 *.pyc
 desktop.ini
+CLAUDE.md

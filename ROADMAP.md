@@ -68,7 +68,7 @@ sizing) are **not** repeated below — they are done.
 - **Verify:** while a track plays, OLED shows current volume and a WiFi bar indicator that changes
   when volume or signal changes.
 
-## 6. My Music: floating corner bar graph
+## 6. My Music: floating corner bar graph — DONE 2026-07-15
 
 - **Goal:** FSD 5.1 describes "a bar graph floating randomly around the corners," distinct from the
   current fixed-position `_draw_equalizer` (always at 4 fixed x-coordinates). Add randomized corner
@@ -76,7 +76,7 @@ sizing) are **not** repeated below — they are done.
 - **Verify:** capture two consecutive mock-OLED frames (via `HardwareBundle` mock `last_image`) and
   confirm bar positions move between corners over time, not just bar heights.
 
-## 7. YouTube Online: wire real playback
+## 7. YouTube Online: wire real playback — DONE 2026-07-15
 
 - **Goal:** close the explicit stub at `youtube_online/__init__.py` ("Playback not wired yet").
   On select, resolve the stored video ID/URL via `yt-dlp -g` (or equivalent) to a stream URL and
@@ -85,7 +85,7 @@ sizing) are **not** repeated below — they are done.
 - **Verify:** selecting a known-good entry from `youtube_favorites.csv`/`youtube.db` produces
   audible playback and the player screen (progress bar, controls) renders like `my_music`'s.
 
-## 8. YouTube Online: search
+## 8. YouTube Online: search — DONE 2026-07-15
 
 - **Goal:** FSD 5.2 requires searching YouTube for songs/playlists. Add a search mode that shells
   out to `yt-dlp` (e.g. `ytsearch:`) and lists results for selection, without touching the existing
@@ -93,7 +93,7 @@ sizing) are **not** repeated below — they are done.
 - **Verify:** entering a query returns a non-empty result list for a known popular search term, and
   selecting a result plays it (depends on action 7).
 
-## 9. YouTube Online: save favorites
+## 9. YouTube Online: save favorites — DONE 2026-07-15
 
 - **Goal:** FSD 5.2 requires saving favorite songs/playlists for quick access. From a search result,
   add a "save" action that appends to `youtube_favorites.csv` or `youtube.db` (whichever the
@@ -101,7 +101,7 @@ sizing) are **not** repeated below — they are done.
 - **Verify:** save an item, restart the app, confirm it now appears in the main YouTube Online list
   without re-searching.
 
-## 10. Connect Phone: real now-playing metadata via DBus
+## 10. Connect Phone: real now-playing metadata via DBus — DONE 2026-07-15
 
 - **Goal:** FSD 5.3 requires fetching currently-playing song info from the paired phone via DBus.
   Current code only shells out to `bluetoothctl devices Connected`. Add a DBus query against
@@ -109,14 +109,14 @@ sizing) are **not** repeated below — they are done.
 - **Verify:** with a phone connected and actively playing audio over A2DP/AVRCP, the OLED shows the
   real track title/artist, and updates when the phone changes tracks.
 
-## 11. Connect Phone: prev/next transport controls
+## 11. Connect Phone: prev/next transport controls — DONE 2026-07-15
 
 - **Goal:** FSD 5.3 explicitly requires previous/next controls. Wire short-press control buttons to
   `org.bluez.MediaPlayer1.Next()`/`Previous()` over DBus (depends on action 10 for the interface
   being established).
 - **Verify:** pressing next/previous on the device actually skips tracks on the connected phone.
 
-## 12. BT Settings: enable/disable + visibility controls
+## 12. BT Settings: enable/disable + visibility controls — DONE 2026-07-15
 
 - **Goal:** FSD 5.6 requires toggling Bluetooth on/off and visibility, not just displaying status.
   `system.py` already has `bluetooth_toggle_power()` and `bluetooth_toggle_discoverable()` —
@@ -125,14 +125,14 @@ sizing) are **not** repeated below — they are done.
 - **Verify:** toggling from the OLED actually flips `bluetoothctl show` output for Powered and
   Discoverable.
 
-## 13. BT Settings: pairing flow
+## 13. BT Settings: pairing flow — DONE 2026-07-15
 
 - **Goal:** FSD 5.6 requires managing paired devices. Add a scan-and-pair flow: enable
   discoverable/scan, list newly found unpaired devices, select to pair (`bluetoothctl pair <mac>`).
 - **Verify:** a new test phone can be paired entirely from the OLED menu, then appears in
   `get_paired_devices()`.
 
-## 14. MyIP: WiFi network connect flow with rotary password entry
+## 14. MyIP: WiFi network connect flow with rotary password entry — DONE 2026-07-15
 
 - **Goal:** FSD 5.5 requires listing available networks and connecting by entering a password via
   the rotary encoder. `system.py` already has `get_wifi_networks()`/`connect_wifi()`; `my_ip`
@@ -141,7 +141,7 @@ sizing) are **not** repeated below — they are done.
 - **Verify:** connect to a real WPA2 network entirely from the OLED UI; `get_ip_address()` reflects
   the new network afterward.
 
-## 15. Hardware validation pass on actual Raspberry Pi
+## 15. Hardware validation pass on actual Raspberry Pi — BLOCKED (needs physical Pi)
 
 - **Goal:** everything above (and the existing "Functional" components) has only been verified in
   mock mode in this environment. Run the full app on the target Pi Zero 2W with the real OLED,
@@ -149,7 +149,7 @@ sizing) are **not** repeated below — they are done.
 - **Verify:** `/api/status` on the web UI reports `mock_mode: false`; menu navigation, playback, and
   every component above work physically, not just in mock mode.
 
-## 16. mpd_oled media handoff migration — one component at a time
+## 16. mpd_oled media handoff migration — one component at a time — BLOCKED (needs Pi + MPD backends)
 
 Deferred deliberately: per `MPD_OLED_PIVOT.md`, enabling `mpd_oled_media_handoff` before a backend
 is MPD-compatible causes stale/incorrect metadata. Do this only after actions 1–15 are stable.
@@ -165,7 +165,7 @@ is MPD-compatible causes stale/incorrect metadata. Do this only after actions 1�
   so this may require a different bridging approach — re-evaluate feasibility before starting).
 - **16e.** Repeat for `dlna_upnp`.
 
-## 17. Future enhancement: real-time web UI (FSD section 7)
+## 17. Future enhancement: real-time web UI (FSD section 7) — DONE 2026-07-15
 
 - **Goal:** FSD lists a remote web interface as a future enhancement; the current Flask UI
   (`web.py`) is refresh/polling based. Add SSE or WebSocket push so the "Now Playing" panel updates

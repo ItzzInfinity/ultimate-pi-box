@@ -1,5 +1,95 @@
 # Progress Log
 
+## 2026-07-15
+
+### Completed (ROADMAP.md actions 6-14 and 17)
+
+- **Action 6 — My Music floating corner bar graph:** replaced the fixed-position
+  `_draw_equalizer` in `rendering.py` with `_draw_floating_bars`, a 3-bar cluster that hops to a
+  different one of the four screen corners every ~8 animation ticks (`(seed // 8) % 4`). Verified in
+  mock mode that the cluster's centroid visits all four corners (LT, RT, LB, RB) as `seed` advances,
+  i.e. bar *positions* move, not just heights.
+- **Action 7 — YouTube real playback:** `youtube_online/__init__.py` no longer says "Playback not
+  wired yet." Selecting a favorite (or a search result) resolves the video id/URL to a direct audio
+  stream via `resolve_youtube_stream()` (new in `system.py`, `yt-dlp -f bestaudio -g`, argv form) and
+  plays it through the existing `VlcRcProcess.play_url`. A full player screen (progress bar,
+  `<< / ||/> / >> / St` controls, floating bars) renders like `my_music`.
+- **Action 8 — YouTube search:** a rotary character-entry screen (`draw_search`) feeds
+  `search_youtube()` (new in `system.py`, `yt-dlp --flat-playlist --dump-json ytsearch10:`). Results
+  render as a selectable list.
+- **Action 9 — YouTube save favorites:** from a search result, an action menu (`Play` /
+  `Save to favorites` / `Back`) appends `Title,Video ID,URL` to `youtube_favorites.csv` (header
+  written on first save) and reloads the favorites list so the entry appears immediately.
+- **Action 10 — Connect Phone now-playing via DBus:** `system.py` gained `get_bt_media_info()`,
+  which walks BlueZ's `org.freedesktop.DBus.ObjectManager` to find `org.bluez.MediaPlayer1` and reads
+  `Track` Title/Artist/Album and `Status`. `connect_phone` polls it (≤1 Hz) and renders a player
+  screen with the real track metadata, degrading gracefully to a "no phone connected" message.
+- **Action 11 — Connect Phone prev/next:** `bt_media_control()` calls
+  `org.bluez.MediaPlayer1.Next()/Previous()/Play()/Pause()`. The three-way control row
+  (`<< / ||-or-> / >>`) is wired to short-press and to the web transport panel.
+- **Action 12 — BT Settings toggles:** `bt_settings` is now an interactive menu; entries 1-2 flip
+  `Powered`/`Discoverable` via the existing `bluetooth_toggle_power/discoverable`, then re-read
+  `bluetoothctl show`.
+- **Action 13 — BT Settings pairing flow:** "Scan & pair new device" runs `bluetooth_scan()`
+  (`bluetoothctl --timeout 8 scan on` + `devices`), filters out already-paired MACs, lists the rest,
+  and pairs+trusts the selected one via `bluetooth_pair()`.
+- **Action 14 — MyIP WiFi connect flow:** `my_ip` now has info → network-list → password-entry →
+  result states. It lists `get_wifi_networks()` (SSID + signal), connects open networks directly, and
+  for secured networks opens a **masked** rotary character-entry screen (upper/lower/digits/symbols)
+  feeding `connect_wifi(ssid, password)`.
+- **Action 17 — real-time web UI:** added a Server-Sent Events channel. `app.live_state()` returns a
+  lightweight snapshot (active component only, so it is cheap to poll ~1 Hz); `web.py` streams it at
+  `/events`, and page JS updates the "Now Playing" panel and mpd_oled status with no reload. A live
+  dot indicates stream health.
+
+### Security review — vulnerabilities found and fixed
+
+1. **SQL injection (fixed)** — `youtube_online._load_from_db` interpolated a table name straight into
+   `f"SELECT * FROM {table[0]}"`. Now the identifier is validated against `^[A-Za-z_][A-Za-z0-9_]*$`
+   and quoted (`"..."`) before use; a non-matching name returns no rows.
+2. **Latent command injection (fixed)** — `VlcRcProcess.play_shell` used `subprocess.Popen(..., shell=True)`
+   on an f-string. It was dead code (nothing called it) and the YouTube feature was deliberately built
+   on the argv-form `play_url` instead, so the method was removed to eliminate the sink entirely.
+3. **Web CSRF via state-changing GET (fixed)** — `/component/<key>/<command>` and `/open/<key>` were
+   GET routes reachable from `<a href>`/`<img>`/link-prefetch on any page. They are now **POST-only**
+   (GET → 405) and the UI submits real forms. `/api/status` and the new `/events` stay GET (read-only).
+4. **yt-dlp / VLC / nmcli / bluetoothctl invocations (verified safe)** — every new external call uses
+   the argv form (never `shell=True`), so user/network-supplied ids, URLs, SSIDs and MACs cannot break
+   out into a shell.
+
+### Known residual risks (documented, not code bugs)
+
+- The web UI has **no authentication** and binds `0.0.0.0:8080` — this is the FSD's intended
+  "anyone on the LAN can control the box" model, so it is left as-is; CSRF hardening above limits
+  drive-by abuse. Add a token/basic-auth if the box is ever exposed beyond a trusted LAN.
+- `connect_wifi` passes the WiFi password as an `nmcli` argument, so it is briefly visible in the
+  process list (`ps`) — inherent to the nmcli CLI, acceptable on a single-user appliance.
+- `dlna_upnp._parse_didl` parses DLNA XML with stdlib `ElementTree`, which does not resolve external
+  entities (no XXE/SSRF) but can in principle be made to expand internal entities (billion-laughs
+  DoS) by a malicious LAN DLNA server. Low risk; swap to `defusedxml` if hardening further.
+
+### Verification performed (mock-hardware environment)
+
+- `main.py` runs for several seconds with the real Flask server and event loop, no tracebacks.
+- All 9 components pass an enter → rotate → short-press → tick → long-press → `get_web_state` sweep.
+- Action 6: asserted the floating cluster's centroid occupies all four distinct corners across seeds.
+- Actions 7-9: drove the YouTube state machine end-to-end with stubbed network calls — search →
+  results → action menu → save (CSV written with header + row) and → play (stream resolved, player
+  mode entered).
+- Actions 12-14: drove BT power/visibility toggles, scan→pair, and the MyIP network-list → WPA2
+  password entry → connect (and open-network direct connect) with stubbed system calls; asserted the
+  right `bluetooth_*` / `connect_wifi` calls fired with the expected arguments.
+- Web: home renders with the SSE hook; GET on a command route returns 405; POST succeeds; `/events`
+  returns `text/event-stream` and emits a `data:` frame.
+
+### Still blocked (require physical hardware — cannot be done in this mock environment)
+
+- **Action 15 — hardware validation pass:** needs the actual Pi Zero 2W, OLED, encoder and DAC; this
+  workspace has no GPIO/OLED (`mock_mode: true`). All above is verified only in mock mode.
+- **Action 16 — mpd_oled media handoff migration:** deferred per `MPD_OLED_PIVOT.md`; enabling
+  handoff before each backend is MPD-compatible causes stale metadata, and it needs the Pi + a
+  running MPD to validate. `mpd_oled_media_handoff` remains `False`.
+
 ## 2026-06-16
 
 ### Completed (ROADMAP.md actions 1-5)

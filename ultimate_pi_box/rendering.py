@@ -92,10 +92,26 @@ def draw_message(hardware, title: str, lines: list[str], footer: str = "") -> No
     hardware.display(image)
 
 
-def _draw_equalizer(draw, width: int, height: int, seed: int) -> None:
-    for index, x in enumerate((2, 8, width - 12, width - 6)):
-        level = 4 + int(abs(math.sin((seed + index) / 2.0)) * 10)
-        draw.rectangle((x, height - 4 - level, x + 2, height - 4), fill=255)
+def _draw_floating_bars(draw, width: int, height: int, seed: int) -> None:
+    """FSD 5.1: a small bar graph that floats randomly around the four corners.
+
+    The cluster hops to a different corner every few animation ticks (so the bar
+    *positions* move, not just their heights), staying clear of the packed centre
+    where the title/progress/controls live.
+    """
+    corner_index = (seed // 8) % 4
+    corners = (
+        (2, 2),                 # top-left
+        (width - 10, 2),        # top-right
+        (2, height - 12),       # bottom-left
+        (width - 10, height - 12),  # bottom-right
+    )
+    anchor_x, anchor_y = corners[corner_index]
+    for index in range(3):
+        level = 3 + int(abs(math.sin((seed + index * 2) / 3.0)) * 8)
+        x = anchor_x + index * 3
+        bar_top = anchor_y + (10 - level)
+        draw.rectangle((x, bar_top, x + 1, anchor_y + 10), fill=255)
 
 
 def _draw_signal_bars(draw, width: int, signal_text: str) -> None:
@@ -167,16 +183,26 @@ def draw_player(
         right_width, _ = text_size(draw, right, fonts.small)
         draw.text((hardware.width - right_width - 2, 24), right, font=fonts.small, fill=255)
 
-    _draw_equalizer(draw, hardware.width, hardware.height, seed)
+    _draw_floating_bars(draw, hardware.width, hardware.height, seed)
     hardware.display(image)
 
 
-def draw_search(hardware, title: str, query: str, current_char: str) -> None:
+def draw_search(
+    hardware,
+    title: str,
+    query: str,
+    current_char: str,
+    masked: bool = False,
+    hint: str = "Press=add  Long=done",
+) -> None:
     image, draw = make_canvas(hardware)
     fonts = hardware.fonts
 
-    draw.text((2, 0), title, font=fonts.title, fill=255)
-    draw.text((2, 16), f"Query: {query or '_'}", font=fonts.body, fill=255)
+    draw.text((2, 0), trim_text(draw, title, fonts.title, hardware.width - 4), font=fonts.title, fill=255)
+    shown = ("*" * len(query)) if masked else query
+    prefix = "Pass: " if masked else "Query: "
+    entry = trim_text(draw, f"{prefix}{shown or '_'}", fonts.body, hardware.width - 4)
+    draw.text((2, 16), entry, font=fonts.body, fill=255)
 
     label = "DEL" if current_char == "<DEL>" else "OK" if current_char == "<OK>" else current_char
     char_width, _ = text_size(draw, label, fonts.title)
@@ -184,7 +210,7 @@ def draw_search(hardware, title: str, query: str, current_char: str) -> None:
     draw.rectangle((box_x, 32, box_x + char_width + 10, 50), outline=255)
     draw.text((box_x + 5, 34), label, font=fonts.title, fill=255)
 
-    draw.text((2, hardware.height - 9), "Press=add  Long=done", font=fonts.small, fill=255)
+    draw.text((2, hardware.height - 9), trim_text(draw, hint, fonts.small, hardware.width - 4), font=fonts.small, fill=255)
     hardware.display(image)
 
 

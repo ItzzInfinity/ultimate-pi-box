@@ -208,6 +208,31 @@ class UltimatePiBoxApp:
             "web_port": self.config.web_port,
         }
 
+    def live_state(self) -> dict[str, object]:
+        """Lightweight snapshot for the SSE push channel.
+
+        Only touches the active component (not every component) so it is cheap
+        enough to poll roughly once a second on the Pi.
+        """
+        current_key = None
+        current_label = None
+        current_state: dict[str, object] | None = None
+        if self.current_component is not None:
+            current_key = getattr(self.current_component, "key", "")
+            current_label = getattr(self.current_component, "label", "")
+            try:
+                current_state = self.current_component.get_web_state(self)
+            except Exception:
+                current_state = None
+        return {
+            "selected_index": self.selected_index,
+            "current_component_key": current_key,
+            "current_component_label": current_label,
+            "current_component_state": current_state,
+            "mpd_oled": self.mpd_oled.status(),
+            "mock_mode": self.hardware.mock_mode,
+        }
+
     def dispatch_web_command(self, component_key: str, command: str, value: str | None = None) -> bool:
         component = self.components.get(component_key)
         if component is None:
